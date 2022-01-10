@@ -1,3 +1,5 @@
+use crossterm::{cursor, QueueableCommand};
+use std::io::{stdout, Write};
 use std::{thread, time};
 
 const NUM_ROWS: usize = 6;
@@ -109,22 +111,38 @@ fn draw_grid(grid: &Grid) {
 }
 
 fn main() {
+    let mut stdout = stdout();
+
     // Init
     let mut grid = Grid::new();
 
-    // Seed (Beacon)
-    grid.set_cell(1, 1, true);
-    grid.set_cell(1, 2, true);
-    grid.set_cell(2, 1, true);
+    // Seed (Toad)
+    grid.set_cell(2, 2, true);
+    grid.set_cell(2, 3, true);
+    grid.set_cell(2, 4, true);
 
-    grid.set_cell(3, 4, true);
-    grid.set_cell(4, 3, true);
-    grid.set_cell(4, 4, true);
+    grid.set_cell(3, 1, true);
+    grid.set_cell(3, 2, true);
+    grid.set_cell(3, 3, true);
+
+    // Seed (Beacon)
+    // grid.set_cell(1, 1, true);
+    // grid.set_cell(1, 2, true);
+    // grid.set_cell(2, 1, true);
+
+    // grid.set_cell(3, 4, true);
+    // grid.set_cell(4, 3, true);
+    // grid.set_cell(4, 4, true);
 
     // Game Loop
     loop {
         grid.update();
+
+        stdout.queue(cursor::SavePosition).unwrap();
         draw_grid(&grid);
+        stdout.queue(cursor::RestorePosition).unwrap();
+        stdout.flush().unwrap();
+
         thread::sleep(time::Duration::from_millis(500));
     }
 }
