@@ -1,50 +1,47 @@
-use crossterm::{cursor, QueueableCommand};
-use std::io::{stdout, Write};
+use std::ops::Range;
 use std::{thread, time};
 
-const NUM_ROWS: usize = 6;
-const NUM_COLS: usize = 6;
-
-struct Bounds {
-    lower: usize,
-    upper: usize,
-}
+const GRID_SIZE: usize = 6;
 
 struct Grid {
-    bit_array: [bool; NUM_ROWS * NUM_COLS],
+    bit_array: [[bool; GRID_SIZE]; GRID_SIZE],
 }
 
 impl Grid {
     fn new() -> Grid {
         Grid {
-            bit_array: [false; NUM_ROWS * NUM_COLS],
+            bit_array: [[false; GRID_SIZE]; GRID_SIZE],
         }
     }
 
     fn get_cell(&self, row: usize, col: usize) -> bool {
-        self.bit_array[row * NUM_COLS + col]
+        self.bit_array[row][col]
     }
 
     fn set_cell(&mut self, row: usize, col: usize, is_alive: bool) {
-        self.bit_array[row * NUM_COLS + col] = is_alive;
+        self.bit_array[row][col] = is_alive;
     }
 
-    fn get_bounds(&self, val: usize, limit: usize) -> Bounds {
-        let lower = if val > 0 { val - 1 } else { val };
-        let upper = if val + 1 < limit { val + 2 } else { val + 1 };
-        Bounds { lower, upper }
+    fn get_bounds(&self, val: usize) -> Range<usize> {
+        let start = if val > 0 { val - 1 } else { val };
+        let end = if val + 1 < GRID_SIZE {
+            val + 2
+        } else {
+            val + 1
+        };
+        Range { start, end }
     }
 
     fn count_neighbors(&self, row: usize, col: usize) -> usize {
         let mut live_neighbors = 0;
 
         // Make sure we stay in the bounds of the grid
-        let row_bounds = self.get_bounds(row, NUM_ROWS);
-        let col_bounds = self.get_bounds(col, NUM_COLS);
+        let row_bounds = self.get_bounds(row);
+        let col_bounds = self.get_bounds(col);
 
         // Iterate through all 8 adjacent cells
-        for i in row_bounds.lower..row_bounds.upper {
-            for j in col_bounds.lower..col_bounds.upper {
+        for i in row_bounds.start..row_bounds.end {
+            for j in col_bounds.start..col_bounds.end {
                 // Make sure to skip the cell at (row, col)
                 if i == row && j == col {
                     continue;
@@ -67,25 +64,25 @@ impl Grid {
         // Any live cell with more than three live neighbours dies, as if by overpopulation.
         // Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
-        let mut updated_bit_array = [false; NUM_ROWS * NUM_COLS];
+        let mut updated_bit_array = [[false; GRID_SIZE]; GRID_SIZE];
 
-        for i in 0..NUM_ROWS {
-            for j in 0..NUM_COLS {
-                updated_bit_array[i * NUM_COLS + j] = self.bit_array[i * NUM_COLS + j];
+        for (i, row) in updated_bit_array.iter_mut().enumerate() {
+            for (j, col) in row.iter_mut().enumerate() {
+                *col = self.bit_array[i][j];
                 let live_neighbors = self.count_neighbors(i, j);
                 // If the cell is alive
                 if self.get_cell(i, j) {
                     // Set the cell to dead if it doesn't have fewer than 2 or more than 3 live
                     // neighbors
                     if !(2..=3).contains(&live_neighbors) {
-                        updated_bit_array[i * NUM_COLS + j] = false;
+                        *col = false;
                     }
                 }
                 // If the cell is dead
                 else {
                     // Set the cell to alive if it has exactly 3 live neighbors
                     if live_neighbors == 3 {
-                        updated_bit_array[i * NUM_COLS + j] = true;
+                        *col = true;
                     }
                 }
             }
@@ -93,26 +90,26 @@ impl Grid {
 
         self.bit_array = updated_bit_array;
     }
-}
 
-fn draw_grid(grid: &Grid) {
-    println!();
-    for i in 0..NUM_ROWS {
-        for j in 0..NUM_COLS {
-            let is_alive = grid.get_cell(i, j);
-            if is_alive {
-                print!(" X ");
-            } else {
-                print!(" . ");
-            }
-        }
+    fn draw(&self) {
+        print!("\x1B[2J\x1B[1;1H");
+
         println!();
+        for i in 0..GRID_SIZE {
+            for j in 0..GRID_SIZE {
+                let is_alive = self.get_cell(i, j);
+                if is_alive {
+                    print!(" X ");
+                } else {
+                    print!(" . ");
+                }
+            }
+            println!();
+        }
     }
 }
 
 fn main() {
-    let mut stdout = stdout();
-
     // Init
     let mut grid = Grid::new();
 
@@ -137,11 +134,7 @@ fn main() {
     // Game Loop
     loop {
         grid.update();
-
-        stdout.queue(cursor::SavePosition).unwrap();
-        draw_grid(&grid);
-        stdout.queue(cursor::RestorePosition).unwrap();
-        stdout.flush().unwrap();
+        grid.draw();
 
         thread::sleep(time::Duration::from_millis(500));
     }
