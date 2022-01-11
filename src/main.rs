@@ -77,7 +77,7 @@ impl Grid {
                 if self.get_cell(i, j) {
                     // Set the cell to dead if it doesn't have fewer than 2 or more than 3 live
                     // neighbors
-                    if live_neighbors < 2 || live_neighbors > 3 {
+                    if !(2..=3).contains(&live_neighbors) {
                         updated_bit_array[i * NUM_COLS + j] = false;
                     }
                 }
@@ -96,7 +96,7 @@ impl Grid {
 }
 
 fn draw_grid(grid: &Grid) {
-    println!("");
+    println!();
     for i in 0..NUM_ROWS {
         for j in 0..NUM_COLS {
             let is_alive = grid.get_cell(i, j);
@@ -106,7 +106,7 @@ fn draw_grid(grid: &Grid) {
                 print!(" . ");
             }
         }
-        println!("");
+        println!();
     }
 }
 
