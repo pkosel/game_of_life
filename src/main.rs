@@ -14,10 +14,6 @@ impl Grid {
         }
     }
 
-    fn get_cell(&self, row: usize, col: usize) -> bool {
-        self.bit_array[row][col]
-    }
-
     fn set_cell(&mut self, row: usize, col: usize, is_alive: bool) {
         self.bit_array[row][col] = is_alive;
     }
@@ -48,7 +44,7 @@ impl Grid {
                 }
 
                 // If there's a cell at (i, j), increment live_neighbors
-                if self.get_cell(i, j) {
+                if self.bit_array[i][j] {
                     live_neighbors += 1;
                 }
             }
@@ -71,7 +67,7 @@ impl Grid {
                 *col = self.bit_array[i][j];
                 let live_neighbors = self.count_neighbors(i, j);
                 // If the cell is alive
-                if self.get_cell(i, j) {
+                if self.bit_array[i][j] {
                     // Set the cell to dead if it doesn't have fewer than 2 or more than 3 live
                     // neighbors
                     if !(2..=3).contains(&live_neighbors) {
@@ -96,10 +92,9 @@ impl Grid {
         print!("\x1B[2J\x1B[1;1H");
 
         println!();
-        for i in 0..GRID_SIZE {
-            for j in 0..GRID_SIZE {
-                let is_alive = self.get_cell(i, j);
-                if is_alive {
+        for row in self.bit_array.iter() {
+            for col in row.iter() {
+                if *col {
                     print!(" X ");
                 } else {
                     print!(" . ");
