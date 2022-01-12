@@ -92,6 +92,7 @@ impl Grid {
     }
 
     fn draw(&self) {
+        // Clear the terminal
         print!("\x1B[2J\x1B[1;1H");
 
         println!();
