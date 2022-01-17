@@ -19,7 +19,7 @@ impl Grid {
     }
 
     fn get_bounds(&self, val: usize) -> Range<usize> {
-        let start = if val > 0 { val - 1 } else { val };
+        let start = val.saturating_sub(1);
         let end = if val + 1 < GRID_SIZE {
             val + 2
         } else {
@@ -36,8 +36,8 @@ impl Grid {
         let col_bounds = self.get_bounds(col);
 
         // Iterate through all 8 adjacent cells
-        for i in row_bounds.start..row_bounds.end {
-            for j in col_bounds.start..col_bounds.end {
+        for i in row_bounds {
+            for j in col_bounds.clone() {
                 // Make sure to skip the cell at (row, col)
                 if i == row && j == col {
                     continue;
@@ -70,8 +70,11 @@ impl Grid {
                 if self.bit_array[i][j] {
                     // Set the cell to dead if it doesn't have fewer than 2 or more than 3 live
                     // neighbors
-                    if !(2..=3).contains(&live_neighbors) {
-                        *col = false;
+                    match live_neighbors {
+                        2 | 3 => {},
+                        _ => {
+                            *col = false;
+                        }
                     }
                 }
                 // If the cell is dead
